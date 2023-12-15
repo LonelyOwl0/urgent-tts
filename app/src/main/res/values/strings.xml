@@ -1,5 +1,22 @@
 <resources>
     <string name="app_name">Urgent TTS</string>
     <string name="default_web_client_id">721062418786-guioreb7p6r0od8po84v8m8n0lrvdmdi.apps.googleusercontent.com</string>
+    <string-array name="blood_types">
+        <item>Select Blood Type</item>
+            <item>A+</item>
+            <item>A-</item>
+            <item>B+</item>
+            <item>B-</item>
+            <item>AB+</item>
+            <item>AB-</item>
+            <item>O+</item>
+            <item>O-</item>
+    </string-array>
+
+    <color name="flashing_red">#FF0000</color>
+    <color name="flashing_white">#FFFFFF</color>
+
+    <color name="green">#4CAF50</color>
+    <color name="red">#F44336</color>
 
 </resources>
