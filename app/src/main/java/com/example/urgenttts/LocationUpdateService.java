@@ -1,24 +1,28 @@
 package com.example.urgenttts;
 
+
+import android.app.Notification;
 import android.app.Service;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.IBinder;
-import android.location.Location;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.tasks.OnSuccessListener;
-import android.Manifest;
 import android.app.PendingIntent;
-import android.content.Context;
 import android.content.SharedPreferences;
 import android.telephony.SmsManager;
 import android.widget.Toast;
 
 public class LocationUpdateService extends Service {
     private FusedLocationProviderClient fusedLocationProviderClient;
+
+    private static final String CHANNEL_ID = "LocationUpdateServiceChannel";
+
+
 
     @Override
     public void onCreate() {
@@ -34,6 +38,22 @@ public class LocationUpdateService extends Service {
             stopSelf();
             return START_NOT_STICKY;
         }
+
+
+        // Start foreground service with a notification
+        Intent notificationIntent = new Intent(this, MainActivity.class);
+
+        int pendingIntentFlags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? PendingIntent.FLAG_IMMUTABLE : 0;
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, pendingIntentFlags);
+
+        Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("Location Service Running")
+                .setContentText("Sending location updates")
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setContentIntent(pendingIntent)
+                .build();
+
+        startForeground(1, notification);
 
         fusedLocationProviderClient.getLastLocation().addOnSuccessListener(location -> {
             if (location != null) {
@@ -73,6 +93,7 @@ public class LocationUpdateService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        // You may want to cancel the location updates or do any other cleanup before the service is destroyed
+        stopForeground(true);
+
     }
 }

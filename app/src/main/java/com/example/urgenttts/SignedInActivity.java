@@ -1,18 +1,22 @@
 package com.example.urgenttts;
 
 import android.app.AlarmManager;
+import android.app.AlertDialog;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.app.Service;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.media.MediaPlayer;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.Settings;
 import android.telephony.SmsManager;
 import android.util.Log;
 import android.view.View;
@@ -30,14 +34,15 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 public class SignedInActivity extends AppCompatActivity {
 
+    private Button fire,cops,samu,contact_urgence;
+
+    private Button chatButton;
     private Button btnToggleLocationUpdates;
     private boolean isLocationServiceRunning = false;
 
@@ -60,6 +65,8 @@ public class SignedInActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_signed_in);
 
+        promptEnableNotificationsIfNeeded();
+
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.SEND_SMS}, PERMISSION_REQUEST_CODE);
         }
@@ -75,8 +82,7 @@ public class SignedInActivity extends AppCompatActivity {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user != null) {
             userNameTextView.setText(user.getDisplayName());
-            //userEmailTextView.setText(user.getEmail());
-            // You can also set user's photo by getting the photo URL from user.getPhotoUrl()
+
         }
 
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -87,6 +93,55 @@ public class SignedInActivity extends AppCompatActivity {
 
         signOutButton = findViewById(R.id.sign_out_button);
         userInfoButton = findViewById(R.id.user_info_button);
+        chatButton = findViewById(R.id.chatButton);
+
+        fire = findViewById(R.id.buttonFire);
+        cops = findViewById(R.id.buttonCops);
+        samu = findViewById(R.id.buttonMeds);
+        contact_urgence = findViewById(R.id.buttonUrgence);
+
+        contact_urgence.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String emergencyContactNumber = getEmergencyContactNumber();
+                if (!emergencyContactNumber.isEmpty()) {
+                    initiateCall(emergencyContactNumber);
+                } else {
+                    Toast.makeText(SignedInActivity.this, "Emergency contact number not set", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
+
+        fire.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                initiateCall("18");
+            }
+        });
+
+        cops.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                initiateCall("17");
+            }
+        });
+
+        samu.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                initiateCall("15");
+            }
+        });
+
+
+        chatButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(SignedInActivity.this, chatActivity.class);
+                startActivity(intent);
+            }
+        });
 
         signOutButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -131,13 +186,13 @@ public class SignedInActivity extends AppCompatActivity {
                     isLocationServiceRunning = false;
                     btnToggleLocationUpdates.setText("SMS Location Sharing Off");
                     btnToggleLocationUpdates.setBackgroundColor(ContextCompat.getColor(SignedInActivity.this, R.color.red));
-                    Log.d("AAAAAAAAAAAAAAAAAAAA", "WE STOPPED IT");
+
                 } else {
                     scheduleLocationUpdates();
                     isLocationServiceRunning = true;
                     btnToggleLocationUpdates.setText("SMS Location Sharing On");
                     btnToggleLocationUpdates.setBackgroundColor(ContextCompat.getColor(SignedInActivity.this, R.color.green));
-                    Log.d("AAAAAAAAAAAAAAAAAAAA", "WE LAUNCHED IT");
+
                 }
             }
         });
@@ -344,6 +399,38 @@ public class SignedInActivity extends AppCompatActivity {
             alarmManager.cancel(pendingIntent);
         }
     }
+
+    private void promptEnableNotificationsIfNeeded() {
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !notificationManager.areNotificationsEnabled()) {
+            new AlertDialog.Builder(this)
+                    .setTitle("Enable Notifications")
+                    .setMessage("Notifications are disabled. Please enable them to receive important updates.")
+                    .setPositiveButton("Settings", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            Intent intent = new Intent();
+                            intent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+                            intent.putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
+                            startActivity(intent);
+                        }
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
+        }
+    }
+
+    private void initiateCall(String number) {
+        Intent intent = new Intent(Intent.ACTION_DIAL); // Use ACTION_CALL to directly call
+        intent.setData(Uri.parse("tel:" + number));
+        startActivity(intent);
+    }
+
+    private String getEmergencyContactNumber() {
+        SharedPreferences sharedPreferences = getSharedPreferences("UserDetails", MODE_PRIVATE);
+        return sharedPreferences.getString("EmergencyContactPhone", "");
+    }
+
 
 
 

@@ -19,4 +19,7 @@
     <color name="green">#4CAF50</color>
     <color name="red">#F44336</color>
 
+    <string name="channel_name">Service Channel</string>
+    <string name="channel_description">Notifications for service status</string>
+
 </resources>
